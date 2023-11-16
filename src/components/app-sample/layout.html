@@ -1,0 +1,39 @@
+<style>
+    slot {
+        display: block;
+    }
+
+    .header {
+        font-size: larger;
+    }
+
+    :host {
+        display: block;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    :host(._state1) {
+        background-color: red;
+    }
+
+    :host(._state2) {
+        background-color: blue;
+    }
+</style>
+
+<slot class="header" name="header"></slot>
+<slot name="body"></slot>
+<slot></slot>
+
+<div>
+    <input type="text" />
+</div>
+
+<div>
+    <button id="state1">
+        state1
+    </button>
+    <button id="state2">
+        state2
+    </button>
+</div>    
