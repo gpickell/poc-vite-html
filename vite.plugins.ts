@@ -9,7 +9,7 @@ export function html(): Plugin[] {
     const suffix = "?template";
     const build: Plugin = {
         apply: "build",
-        enforce: "pre",
+        enforce: "post",
         name: "html-minify",
 
         buildStart() {
@@ -30,6 +30,10 @@ export function html(): Plugin[] {
                     sortClassName: true,
                 });
             };
+        },
+
+        async transformIndexHtml(html) {
+            return await minify(html);
         }
     };
 
