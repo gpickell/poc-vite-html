@@ -1,3 +1,4 @@
+import { createReadStream, createWriteStream } from "fs";
 import fs from "fs/promises";
 import path from "path";
 
@@ -41,7 +42,7 @@ export function html(): Plugin[] {
                 return normalizePath(path.resolve("src/html-loader.ts"));
             }
 
-            if (id[0] === "\0" && id.endsWith(suffix)) {
+            if (id[0] !== "\0" && id.endsWith(suffix)) {
                 return id;
             }
 
@@ -63,7 +64,7 @@ export function html(): Plugin[] {
         },
 
         async load(id) {
-            if (!id.endsWith(suffix)) {
+            if (id === "\0" || !id.endsWith(suffix)) {
                 return undefined;
             }
 
@@ -100,5 +101,68 @@ export function html(): Plugin[] {
         }
     };
 
-    return [build, main];
+    const api: Plugin = {
+        name: "html-editor-api",
+        enforce: "pre",
+
+        configureServer({ middlewares }) {
+            middlewares.use("/api/editor", async (req, res, next) => {
+                const tail = (req.url || "").replace(/^.*?\?/, "");
+                const file = path.resolve(tail);
+                if (req.method === "GET") {
+                    req.resume();
+                    
+                    const stream = createReadStream(file);
+                    stream.on("error", () => {
+                        res.statusCode = 404;
+                        res.end();
+                    });
+                    
+                    return void stream.on("open", () => {
+                        res.setHeader("Content-Type", "text/html; charset=utf-8");
+                        res.statusCode = 200;
+                        stream.pipe(res);
+                    });
+                }
+
+                if (req.method === "POST") {
+                    const stats = await fs.stat(file).catch(() => {});
+                    if (stats && stats.isFile()) {
+                        const stream = createWriteStream(file + ".tmp");
+                        req.on("error", () => {});
+                        req.on("close", () => {
+                            if (!req.readableEnded) {
+                                stream.destroy();
+                            }
+                        });
+
+                        stream.on("error", () => {});
+                        stream.on("close", async () => {
+                            let success = false;
+                            if (stream.writableFinished) {
+                                success = await fs.rename(file + ".tmp", file).then(() => true, () => false);
+                            }
+
+                            req.resume();
+                            req.statusCode = success ? 200 : 500;
+                            res.end();
+
+                            await fs.unlink(file + ".tmp").catch(() => {});
+                        });
+
+                        return void req.pipe(stream);
+                    }
+                    
+                    req.resume();
+                    res.statusCode = 404;
+                    return res.end();
+                }
+
+                res.statusCode = 405;
+                res.end();
+            });
+        }
+    };
+
+    return [build, main, api];
 }

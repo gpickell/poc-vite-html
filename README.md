@@ -1,3 +1,3 @@
-# TypeScript + Vite + Simple Fast + Web Components + Dev Containers
+# Vite + TS + Custom Element
 
 Test

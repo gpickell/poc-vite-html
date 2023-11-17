@@ -8,7 +8,7 @@
     "portsAttributes": {
         "3080": {
             "label": "Application",
-            "onAutoForward": "ignore"       
+            "onAutoForward": "ignore"
         }
     },
     "customizations": {
