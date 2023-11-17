@@ -6,4 +6,13 @@ import react from "@vitejs/plugin-react-swc";
 export default defineConfig({
     base: "",
     plugins: [html(), react()],
+
+    build: {
+        rollupOptions: {
+            output: {
+                chunkFileNames: "static/chunk.[hash].mjs",
+                entryFileNames: "static/chunk.[hash].mjs",
+            }
+        }
+    }
 })
