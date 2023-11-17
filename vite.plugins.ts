@@ -7,6 +7,7 @@ export function html(): Plugin[] {
     let minify = async (html: string) => html;
     const suffix = "?template";
     const build: Plugin = {
+        apply: "build",
         enforce: "pre",
         name: "html-minify",
 
@@ -58,15 +59,15 @@ export function html(): Plugin[] {
                 return result;
             }
 
-            return `\0${id}${suffix}`
+            return `${id}${suffix}`
         },
 
         async load(id) {
-            if (id[0] !== "\0" || !id.endsWith(suffix)) {
+            if (!id.endsWith(suffix)) {
                 return undefined;
             }
 
-            id = id.substring(1, id.length - suffix.length);
+            id = id.substring(0, id.length - suffix.length);
 
             const text = await fs.readFile(id, "utf-8");
             const html = await minify(text);
@@ -79,6 +80,7 @@ export function html(): Plugin[] {
             });
 
             const code = [
+                "",
                 `const html = \`${escaped}\`;`,
                 'import { SemanticTemplate } from "#html-loader";',
                 "let state;",

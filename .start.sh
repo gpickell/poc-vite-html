@@ -1,2 +1,2 @@
 yarn
-yarn dev --port 3080 &
+yarn dev --port 3080
