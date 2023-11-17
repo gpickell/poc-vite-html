@@ -10,5 +10,12 @@
             "label": "Application",
             "onAutoForward": "ignore"            
         }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "arcanis.vscode-zipfs"
+            ]
+        }
     }
 }
