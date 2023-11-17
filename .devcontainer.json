@@ -1,6 +1,7 @@
 {
     "image": "mcr.microsoft.com/devcontainers/typescript-node:0-20",
-    "postStartCommand": ". ./.start.sh",
+    "postCreateCommand": "yarn",
+    "postAttachCommand": ". ./.start.sh",
     "forwardPorts": [
         3080
     ],
