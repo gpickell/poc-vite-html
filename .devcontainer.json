@@ -1,7 +1,7 @@
 {
     "image": "mcr.microsoft.com/devcontainers/typescript-node:0-20",
     "updateContentCommand": "yarn",
-    "postStartCommand": ["bash", "-c", "nohup yarn dev --port 3080 --host 0.0.0.0 &"],
+    "postStartCommand": ["bash", "-c", "ls -l > /tmp/test &"],
     "waitFor": "postStartCommand",
     "forwardPorts": [
         3080
