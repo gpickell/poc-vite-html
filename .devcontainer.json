@@ -1,7 +1,8 @@
 {
     "image": "mcr.microsoft.com/devcontainers/typescript-node:0-20",
-    "postCreateCommand": "yarn",
-    "postAttachCommand": "yarn dev --port 3080",
+    "updateContentCommand": "yarn",
+    "postStartCommand": "nohup yarn dev --port 3080 &",
+    "waitFor": "postStartCommand",
     "forwardPorts": [
         3080
     ],
