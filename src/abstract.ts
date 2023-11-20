@@ -46,6 +46,7 @@ declare module "#html-loader" {
     class WeakStore<K, T extends object> extends Map<K, WeakRef<T>> {
         create(key: K, factory: () => T): T;
         deref(key: K): T | undefined;
+        set(key: K, value: T | WeakRef<T>): this;
     }
 
     export function newlyCreated(model: object): boolean;

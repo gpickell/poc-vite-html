@@ -10,12 +10,6 @@ export default defineConfig({
     plugins: [html(), react()],
 
     build: {
-        rollupOptions: {
-            output: {
-                assetFileNames: "static/asset.[hash].[ext]",
-                chunkFileNames: "static/chunk.[hash].mjs",
-                entryFileNames: "static/chunk.[hash].mjs",
-            }
-        }
+        minify: false,
     }
 })

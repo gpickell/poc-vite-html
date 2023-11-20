@@ -135,14 +135,6 @@ export namespace loader {
 // SemanticTemplate
 //
 
-function isHot() {
-    if (import.meta.hot) {
-        return true;
-    }
-
-    return false;
-}
-
 export class SemanticTemplate extends EventTarget {
     readonly root = document.createElement("template");
 
@@ -161,9 +153,7 @@ export class SemanticTemplate extends EventTarget {
         if (this.hot()) {
             this.dispatchEvent(new Event("change"));
         }
-
-        this.hot = isHot;
-    }    
+    }
 }
 
 
@@ -379,6 +369,14 @@ const created = new WeakSet();
 const reg = new FinalizationRegistry<() => any>(x => x());
 
 export class WeakStore<K, T extends object> extends Map<K, WeakRef<T>> {
+    clear() {
+        for (const value of this.values()) {
+            reg.unregister(value);
+        }
+
+        super.clear();
+    }
+
     create(key: K, factory: () => T) {
         let wr = this.get(key);
         if (wr) {
@@ -392,18 +390,49 @@ export class WeakStore<K, T extends object> extends Map<K, WeakRef<T>> {
         const result = factory();
         created.add(result);
 
-        this.set(key, wr = new WeakRef(result));
+        super.set(key, wr = new WeakRef(result));
         reg.register(result, () => {
             if (this.get(key) === wr) {
-                this.delete(key);
+                super.delete(key);
             }
-        });
+        }, wr);
 
         return result;
     }
 
+    delete(key: K) {
+        const wr = this.get(key);
+        wr && reg.unregister(wr);
+        
+        return !!wr;
+    }
+
     deref(key: K) {
         return this.get(key)?.deref();
+    }
+
+    set(key: K, value: WeakRef<T> | T) {
+        if (value instanceof WeakRef) {
+            value = value.deref() as T;
+
+            if (!value) {
+                return this;
+            }
+        }
+
+        if (this.deref(key) === value) {
+            return this;
+        }
+
+        const wr = new WeakRef(value);
+        super.set(key, wr);
+        reg.register(value, () => {
+            if (this.get(key) === wr) {
+                super.delete(key);
+            }
+        }, wr);
+
+        return this;
     }
 }
 

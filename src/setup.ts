@@ -1,10 +1,10 @@
 import { loader } from "#html-loader";
 
-const modules = import.meta.glob("./*/index.ts");
+const modules = import.meta.glob("./components/*/index.ts");
 
 loader.addEventListener("import", () => {
     const hint = loader.next();
-    const id = `./${hint}/index.ts`;
+    const id = `./components/${hint}/index.ts`;
     if (id in modules) {
         loader.defer();
 

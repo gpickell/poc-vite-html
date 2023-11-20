@@ -1,4 +1,4 @@
-import "../setup";
+import "../../setup";
 
 import layout from "./layout.html";
 import { fromShadow } from "#html-loader";

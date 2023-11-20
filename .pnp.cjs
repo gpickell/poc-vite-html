@@ -26,6 +26,7 @@ const RAW_RUNTIME_STATE =
       [null, {\
         "packageLocation": "./",\
         "packageDependencies": [\
+          ["@arcgis/core", "npm:4.28.10"],\
           ["@types/html-minifier-terser", "npm:7.0.2"],\
           ["@types/node", "npm:20.9.0"],\
           ["@types/react", "npm:18.2.37"],\
@@ -50,6 +51,23 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./.yarn/cache/@aashutoshrathi-word-wrap-npm-1.2.6-5b1d95e487-53c2b231a6.zip/node_modules/@aashutoshrathi/word-wrap/",\
         "packageDependencies": [\
           ["@aashutoshrathi/word-wrap", "npm:1.2.6"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@arcgis/core", [\
+      ["npm:4.28.10", {\
+        "packageLocation": "./.yarn/cache/@arcgis-core-npm-4.28.10-eeb40a1026-8a214c9590.zip/node_modules/@arcgis/core/",\
+        "packageDependencies": [\
+          ["@arcgis/core", "npm:4.28.10"],\
+          ["@esri/arcgis-html-sanitizer", "npm:3.0.1"],\
+          ["@esri/calcite-colors", "npm:6.1.0"],\
+          ["@esri/calcite-components", "npm:1.10.0"],\
+          ["@popperjs/core", "npm:2.11.8"],\
+          ["@zip.js/zip.js", "npm:2.7.31"],\
+          ["focus-trap", "npm:7.5.4"],\
+          ["luxon", "npm:3.4.4"],\
+          ["sortablejs", "npm:1.15.0"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -311,6 +329,75 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["@esri/arcgis-html-sanitizer", [\
+      ["npm:3.0.1", {\
+        "packageLocation": "./.yarn/cache/@esri-arcgis-html-sanitizer-npm-3.0.1-725e800400-acc11c6d2c.zip/node_modules/@esri/arcgis-html-sanitizer/",\
+        "packageDependencies": [\
+          ["@esri/arcgis-html-sanitizer", "npm:3.0.1"],\
+          ["xss", "npm:1.0.13"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@esri/calcite-colors", [\
+      ["npm:6.1.0", {\
+        "packageLocation": "./.yarn/cache/@esri-calcite-colors-npm-6.1.0-730aa8f366-edf5568bfb.zip/node_modules/@esri/calcite-colors/",\
+        "packageDependencies": [\
+          ["@esri/calcite-colors", "npm:6.1.0"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@esri/calcite-components", [\
+      ["npm:1.10.0", {\
+        "packageLocation": "./.yarn/cache/@esri-calcite-components-npm-1.10.0-65e7e9c9e7-555c0247b1.zip/node_modules/@esri/calcite-components/",\
+        "packageDependencies": [\
+          ["@esri/calcite-components", "npm:1.10.0"],\
+          ["@floating-ui/dom", "npm:1.5.3"],\
+          ["@stencil/core", "npm:2.22.3"],\
+          ["@types/color", "npm:3.0.4"],\
+          ["color", "npm:4.2.3"],\
+          ["composed-offset-position", "npm:0.0.4"],\
+          ["dayjs", "npm:1.11.10"],\
+          ["focus-trap", "npm:7.5.4"],\
+          ["form-request-submit-polyfill", "npm:2.0.0"],\
+          ["lodash-es", "npm:4.17.21"],\
+          ["sortablejs", "npm:1.15.0"],\
+          ["timezone-groups", "npm:0.8.0"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@floating-ui/core", [\
+      ["npm:1.5.0", {\
+        "packageLocation": "./.yarn/cache/@floating-ui-core-npm-1.5.0-3cdde0a88b-bca811cefd.zip/node_modules/@floating-ui/core/",\
+        "packageDependencies": [\
+          ["@floating-ui/core", "npm:1.5.0"],\
+          ["@floating-ui/utils", "npm:0.1.6"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@floating-ui/dom", [\
+      ["npm:1.5.3", {\
+        "packageLocation": "./.yarn/cache/@floating-ui-dom-npm-1.5.3-ac36b589ae-e5f30b911f.zip/node_modules/@floating-ui/dom/",\
+        "packageDependencies": [\
+          ["@floating-ui/dom", "npm:1.5.3"],\
+          ["@floating-ui/core", "npm:1.5.0"],\
+          ["@floating-ui/utils", "npm:0.1.6"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@floating-ui/utils", [\
+      ["npm:0.1.6", {\
+        "packageLocation": "./.yarn/cache/@floating-ui-utils-npm-0.1.6-ae508f7272-0a089db0e0.zip/node_modules/@floating-ui/utils/",\
+        "packageDependencies": [\
+          ["@floating-ui/utils", "npm:0.1.6"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["@humanwhocodes/config-array", [\
       ["npm:0.11.13", {\
         "packageLocation": "./.yarn/cache/@humanwhocodes-config-array-npm-0.11.13-12314014f2-d76ca802d8.zip/node_modules/@humanwhocodes/config-array/",\
@@ -490,6 +577,24 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["@popperjs/core", [\
+      ["npm:2.11.8", {\
+        "packageLocation": "./.yarn/cache/@popperjs-core-npm-2.11.8-f1692e11a0-4681e682ab.zip/node_modules/@popperjs/core/",\
+        "packageDependencies": [\
+          ["@popperjs/core", "npm:2.11.8"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@stencil/core", [\
+      ["npm:2.22.3", {\
+        "packageLocation": "./.yarn/cache/@stencil-core-npm-2.22.3-034ddd62d9-6df88e165e.zip/node_modules/@stencil/core/",\
+        "packageDependencies": [\
+          ["@stencil/core", "npm:2.22.3"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["@swc/core", [\
       ["npm:1.3.96", {\
         "packageLocation": "./.yarn/unplugged/@swc-core-virtual-30dc5e15f2/node_modules/@swc/core/",\
@@ -628,6 +733,35 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./.yarn/cache/@swc-types-npm-0.1.5-97cff73f52-b35f93fe89.zip/node_modules/@swc/types/",\
         "packageDependencies": [\
           ["@swc/types", "npm:0.1.5"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@types/color", [\
+      ["npm:3.0.4", {\
+        "packageLocation": "./.yarn/cache/@types-color-npm-3.0.4-62f9367c28-0e8bf2f71b.zip/node_modules/@types/color/",\
+        "packageDependencies": [\
+          ["@types/color", "npm:3.0.4"],\
+          ["@types/color-convert", "npm:2.0.3"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@types/color-convert", [\
+      ["npm:2.0.3", {\
+        "packageLocation": "./.yarn/cache/@types-color-convert-npm-2.0.3-2e6c2337f1-a587054766.zip/node_modules/@types/color-convert/",\
+        "packageDependencies": [\
+          ["@types/color-convert", "npm:2.0.3"],\
+          ["@types/color-name", "npm:1.1.3"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@types/color-name", [\
+      ["npm:1.1.3", {\
+        "packageLocation": "./.yarn/cache/@types-color-name-npm-1.1.3-788090ca08-caea7b6446.zip/node_modules/@types/color-name/",\
+        "packageDependencies": [\
+          ["@types/color-name", "npm:1.1.3"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -952,6 +1086,15 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["@zip.js/zip.js", [\
+      ["npm:2.7.31", {\
+        "packageLocation": "./.yarn/cache/@zip.js-zip.js-npm-2.7.31-704e00139b-3f1e75a905.zip/node_modules/@zip.js/zip.js/",\
+        "packageDependencies": [\
+          ["@zip.js/zip.js", "npm:2.7.31"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["abbrev", [\
       ["npm:2.0.0", {\
         "packageLocation": "./.yarn/cache/abbrev-npm-2.0.0-0eb38a17e5-f742a5a107.zip/node_modules/abbrev/",\
@@ -1204,6 +1347,17 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["color", [\
+      ["npm:4.2.3", {\
+        "packageLocation": "./.yarn/cache/color-npm-4.2.3-4a23227581-7fbe7cfb81.zip/node_modules/color/",\
+        "packageDependencies": [\
+          ["color", "npm:4.2.3"],\
+          ["color-convert", "npm:2.0.1"],\
+          ["color-string", "npm:1.9.1"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["color-convert", [\
       ["npm:2.0.1", {\
         "packageLocation": "./.yarn/cache/color-convert-npm-2.0.1-79730e935b-37e1150172.zip/node_modules/color-convert/",\
@@ -1223,6 +1377,17 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["color-string", [\
+      ["npm:1.9.1", {\
+        "packageLocation": "./.yarn/cache/color-string-npm-1.9.1-dc020e56be-b0bfd74c03.zip/node_modules/color-string/",\
+        "packageDependencies": [\
+          ["color-string", "npm:1.9.1"],\
+          ["color-name", "npm:1.1.4"],\
+          ["simple-swizzle", "npm:0.2.2"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["commander", [\
       ["npm:10.0.1", {\
         "packageLocation": "./.yarn/cache/commander-npm-10.0.1-f17613b72b-53f33d8927.zip/node_modules/commander/",\
@@ -1235,6 +1400,15 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./.yarn/cache/commander-npm-2.20.3-d8dcbaa39b-74c781a524.zip/node_modules/commander/",\
         "packageDependencies": [\
           ["commander", "npm:2.20.3"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["composed-offset-position", [\
+      ["npm:0.0.4", {\
+        "packageLocation": "./.yarn/cache/composed-offset-position-npm-0.0.4-ddf6e8ca05-530cd316c9.zip/node_modules/composed-offset-position/",\
+        "packageDependencies": [\
+          ["composed-offset-position", "npm:0.0.4"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -1260,11 +1434,29 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["cssfilter", [\
+      ["npm:0.0.10", {\
+        "packageLocation": "./.yarn/cache/cssfilter-npm-0.0.10-28e06ce546-478a227a61.zip/node_modules/cssfilter/",\
+        "packageDependencies": [\
+          ["cssfilter", "npm:0.0.10"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["csstype", [\
       ["npm:3.1.2", {\
         "packageLocation": "./.yarn/cache/csstype-npm-3.1.2-cead7d99b2-32c038af25.zip/node_modules/csstype/",\
         "packageDependencies": [\
           ["csstype", "npm:3.1.2"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["dayjs", [\
+      ["npm:1.11.10", {\
+        "packageLocation": "./.yarn/cache/dayjs-npm-1.11.10-2b4382efc1-4de9af5063.zip/node_modules/dayjs/",\
+        "packageDependencies": [\
+          ["dayjs", "npm:1.11.10"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -1707,6 +1899,16 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["focus-trap", [\
+      ["npm:7.5.4", {\
+        "packageLocation": "./.yarn/cache/focus-trap-npm-7.5.4-16fce0d3c6-c09e12b957.zip/node_modules/focus-trap/",\
+        "packageDependencies": [\
+          ["focus-trap", "npm:7.5.4"],\
+          ["tabbable", "npm:6.2.0"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["foreground-child", [\
       ["npm:3.1.1", {\
         "packageLocation": "./.yarn/cache/foreground-child-npm-3.1.1-77e78ed774-9700a02856.zip/node_modules/foreground-child/",\
@@ -1714,6 +1916,15 @@ const RAW_RUNTIME_STATE =
           ["foreground-child", "npm:3.1.1"],\
           ["cross-spawn", "npm:7.0.3"],\
           ["signal-exit", "npm:4.1.0"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["form-request-submit-polyfill", [\
+      ["npm:2.0.0", {\
+        "packageLocation": "./.yarn/cache/form-request-submit-polyfill-npm-2.0.0-19305e2437-7926c4e9da.zip/node_modules/form-request-submit-polyfill/",\
+        "packageDependencies": [\
+          ["form-request-submit-polyfill", "npm:2.0.0"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -1976,6 +2187,15 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["is-arrayish", [\
+      ["npm:0.3.2", {\
+        "packageLocation": "./.yarn/cache/is-arrayish-npm-0.3.2-f856180f79-f59b43dc1d.zip/node_modules/is-arrayish/",\
+        "packageDependencies": [\
+          ["is-arrayish", "npm:0.3.2"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["is-extglob", [\
       ["npm:2.1.1", {\
         "packageLocation": "./.yarn/cache/is-extglob-npm-2.1.1-0870ea68b5-5487da3569.zip/node_modules/is-extglob/",\
@@ -2135,6 +2355,15 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["lodash-es", [\
+      ["npm:4.17.21", {\
+        "packageLocation": "./.yarn/cache/lodash-es-npm-4.17.21-b45832dfce-fb407355f7.zip/node_modules/lodash-es/",\
+        "packageDependencies": [\
+          ["lodash-es", "npm:4.17.21"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["lodash.merge", [\
       ["npm:4.6.2", {\
         "packageLocation": "./.yarn/cache/lodash.merge-npm-4.6.2-77cb4416bf-402fa16a1e.zip/node_modules/lodash.merge/",\
@@ -2178,6 +2407,15 @@ const RAW_RUNTIME_STATE =
         "packageDependencies": [\
           ["lru-cache", "npm:6.0.0"],\
           ["yallist", "npm:4.0.0"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["luxon", [\
+      ["npm:3.4.4", {\
+        "packageLocation": "./.yarn/cache/luxon-npm-3.4.4-c93f95dde8-02e26a0b03.zip/node_modules/luxon/",\
+        "packageDependencies": [\
+          ["luxon", "npm:3.4.4"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -2570,6 +2808,7 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./",\
         "packageDependencies": [\
           ["poc-vite-html", "workspace:."],\
+          ["@arcgis/core", "npm:4.28.10"],\
           ["@types/html-minifier-terser", "npm:7.0.2"],\
           ["@types/node", "npm:20.9.0"],\
           ["@types/react", "npm:18.2.37"],\
@@ -2805,6 +3044,16 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["simple-swizzle", [\
+      ["npm:0.2.2", {\
+        "packageLocation": "./.yarn/cache/simple-swizzle-npm-0.2.2-8dee37fad1-df5e4662a8.zip/node_modules/simple-swizzle/",\
+        "packageDependencies": [\
+          ["simple-swizzle", "npm:0.2.2"],\
+          ["is-arrayish", "npm:0.3.2"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["slash", [\
       ["npm:3.0.0", {\
         "packageLocation": "./.yarn/cache/slash-npm-3.0.0-b87de2279a-e18488c6a4.zip/node_modules/slash/",\
@@ -2842,6 +3091,15 @@ const RAW_RUNTIME_STATE =
           ["agent-base", "npm:7.1.0"],\
           ["debug", "virtual:088d1bae551712e30edb3cb49147628c22e7097f1d212dd42d93076023bf76fad49f4808cd2b0d50ae3644e85dcbdd3c0d141e9646770b84a91d8637667dcadd#npm:4.3.4"],\
           ["socks", "npm:2.7.1"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["sortablejs", [\
+      ["npm:1.15.0", {\
+        "packageLocation": "./.yarn/cache/sortablejs-npm-1.15.0-f3a393abcc-de2e99309d.zip/node_modules/sortablejs/",\
+        "packageDependencies": [\
+          ["sortablejs", "npm:1.15.0"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -2944,6 +3202,15 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["tabbable", [\
+      ["npm:6.2.0", {\
+        "packageLocation": "./.yarn/cache/tabbable-npm-6.2.0-5a74c8b4e2-ced8b38f05.zip/node_modules/tabbable/",\
+        "packageDependencies": [\
+          ["tabbable", "npm:6.2.0"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["tar", [\
       ["npm:6.2.0", {\
         "packageLocation": "./.yarn/cache/tar-npm-6.2.0-3eb25205a7-02ca064a1a.zip/node_modules/tar/",\
@@ -2977,6 +3244,15 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./.yarn/cache/text-table-npm-0.2.0-d92a778b59-02805740c1.zip/node_modules/text-table/",\
         "packageDependencies": [\
           ["text-table", "npm:0.2.0"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["timezone-groups", [\
+      ["npm:0.8.0", {\
+        "packageLocation": "./.yarn/cache/timezone-groups-npm-0.8.0-027d7dd3c1-845a37d5e1.zip/node_modules/timezone-groups/",\
+        "packageDependencies": [\
+          ["timezone-groups", "npm:0.8.0"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -3195,6 +3471,17 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./.yarn/cache/wrappy-npm-1.0.2-916de4d4b3-56fece1a40.zip/node_modules/wrappy/",\
         "packageDependencies": [\
           ["wrappy", "npm:1.0.2"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["xss", [\
+      ["npm:1.0.13", {\
+        "packageLocation": "./.yarn/cache/xss-npm-1.0.13-3d57595f02-ba1ebf985e.zip/node_modules/xss/",\
+        "packageDependencies": [\
+          ["xss", "npm:1.0.13"],\
+          ["commander", "npm:2.20.3"],\
+          ["cssfilter", "npm:0.0.10"]\
         ],\
         "linkType": "HARD"\
       }]\

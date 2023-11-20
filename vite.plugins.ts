@@ -4,15 +4,139 @@ import path from "path";
 
 import { Plugin, normalizePath } from "vite";
 
+async function findSources() {
+    function compOf(id: string) {
+        const tail = id.replace(/^(components|layouts)\//, "");
+        if (tail === id) {
+            return "";
+        }
+
+        return tail.replace(/\/.*/, "");
+    }
+
+    const root = path.resolve("src");
+    const queue = new Set<string>();
+    queue.add(root);
+
+    const mains = new Set<string>();
+    const isApi = /^apis\/.*\.tsx?$/;
+    const isComponent = /^components\/.*\/index\.tsx?$/;
+    const isLayout = /^components\/.*\.html$/;
+    const isMain = /^components\/.*\/main\.tsx?$/;
+    const result = new Map<string, string>();
+    for (const dir of queue) {
+        const list = await fs.readdir(dir, { withFileTypes: true }).catch(() => [] as never);
+        for (const entry of list) {
+            const fn = path.resolve(dir, entry.name);
+            if (entry.isDirectory()) {
+                queue.add(fn);
+            }
+
+            if (entry.isFile()) {
+                const rel = path.relative(root, fn).replace(/[\\/]+/g, "/");
+                const id = rel.replace(/\..*?$/, "");
+                if (isApi.test(rel) || isComponent.test(rel)) {
+                    result.set(id, fn);
+                }
+
+                if (isLayout.test(rel)) {
+                    result.set(id.replace("components", "layouts"), `${fn}?template`);
+                }
+
+                if (isMain.test(rel)) {
+                    mains.add(compOf(id));
+                }
+            }
+        }
+    }
+
+    for (const key of result.keys()) {
+        if (mains.has(compOf(key))) {
+            result.delete(key);
+        }
+    }
+
+    return Object.fromEntries(result);
+}
+
 export function html(): Plugin[] {
     let minify = async (html: string) => html;
     const suffix = "?template";
     const build: Plugin = {
-        apply: "build",
         enforce: "post",
         name: "html-minify",
+        apply: "build",
 
-        buildStart() {
+        async config(options) {
+            let { build } = options;
+            if (!build) {
+                build = options.build = {};
+            }
+
+            let { rollupOptions } = build;
+            if (!rollupOptions) {
+                rollupOptions = build.rollupOptions = {};
+            }
+
+            let { output } = rollupOptions;
+            if (!output) {
+                output = rollupOptions.output = [{}];
+            }
+
+            if (!Array.isArray(output)) {
+                output = rollupOptions.output = [output];
+            }
+
+            if (build.minify === undefined) {
+                build.minify = true;
+            }
+
+            if (!build.minify) {
+                rollupOptions.preserveEntrySignatures = "strict";
+                rollupOptions.input = await findSources();
+
+                const isRelative = /^\.?\.\//;
+                rollupOptions.external = (id, importer) => {
+                    if (id === "#html-loader") {
+                        return true;
+                    }
+
+                    if (!importer || path.isAbsolute(id)) {
+                        return false;
+                    }
+
+                    if (id.endsWith("?url")) {
+                        return false;
+                    }
+
+                    return !isRelative.test(id);
+                };
+
+                const extras: typeof output[0] = {
+                    // preserveModules: true,
+
+                    assetFileNames: "static/asset.[hash].[ext]",
+                    chunkFileNames: "static/chunk.[hash].mjs",
+                    entryFileNames: "[name].mjs",
+                };
+                
+                for (const item of output) {
+                    Object.assign(item, extras);
+                }
+            } else {
+                const extras: typeof output[0] = {
+                    assetFileNames: "static/asset.[hash].[ext]",
+                    chunkFileNames: "static/chunk.[hash].mjs",
+                    entryFileNames: "static/chunk.[hash].mjs",
+                };
+                
+                for (const item of output) {
+                    Object.assign(item, extras);
+                }
+            }
+        },
+
+        buildStart(options) {
             minify = async html => {
                 const { minify } = await import("html-minifier-terser");
                 return await minify(html, {
@@ -22,7 +146,7 @@ export function html(): Plugin[] {
                     decodeEntities: true,
                     html5: true,
                     noNewlinesBeforeTagClose: true,
-                    minifyCSS: true,
+                    minifyCSS: true,                    
                     removeComments: true,
                     removeEmptyAttributes: true,
                     quoteCharacter: "'",
@@ -34,6 +158,32 @@ export function html(): Plugin[] {
 
         async transformIndexHtml(html) {
             return await minify(html);
+        },
+
+        async generateBundle(options, bundle) {
+            for (const key in bundle) {
+                const chunk = bundle[key];
+                if (chunk.type === "chunk" && chunk.moduleIds.length === 1) {
+                    const id = chunk.moduleIds[0];                  
+                    const fn = chunk.fileName.replace(/\.m?js$/, ".d.ts");
+                    if (id[0] !== "\0" && id.endsWith(suffix) && fn.startsWith("layouts/")) {
+                        if (fn !== chunk.fileName) {
+                            const code = [
+                                `import { SemanticElement } from "#html-loader";`,
+                                `declare const template: SemanticElement;`,
+                                `export default template;`,
+                                ``
+                            ];
+
+                            this.emitFile({
+                                type: "asset",
+                                fileName: fn,
+                                source: code.join("\n"),
+                            });
+                        }
+                    }
+                }
+            }
         }
     };
 
@@ -72,9 +222,8 @@ export function html(): Plugin[] {
                 return undefined;
             }
 
-            id = id.substring(0, id.length - suffix.length);
-
-            const text = await fs.readFile(id, "utf-8");
+            const fn = id.substring(0, id.length - suffix.length);
+            const text = await fs.readFile(fn, "utf-8");
             const html = await minify(text);
             const escaped = html.replace(/[$\\`]\{?/g, x => {
                 if (x[0] === "$" && !x[1]) {
@@ -83,10 +232,24 @@ export function html(): Plugin[] {
 
                 return "\\" + x;
             });
+            
+            const imports: string[] = [];
+            const assembled = escaped.replace(/@import url\((.*?)\)/g, (match, url: string) => {
+                url = url.trim();
+
+                if (url[0] === "/" || url.startsWith("http://") || url.startsWith("https://")) {
+                    return match;
+                }
+
+                const ref = "url" + imports.length;
+                imports.push(`import ${ref} from "${url}?url";`);
+                return `@import url(\${${ref}})`;
+            });
 
             const code = [
                 "",
-                `const html = \`${escaped}\`;`,
+                imports,
+                `const html = \`${assembled}\`;`,
                 'import { SemanticTemplate } from "#html-loader";',
                 "let state;",
                 "if (import.meta.hot) {",
@@ -97,17 +260,19 @@ export function html(): Plugin[] {
                 `template.update(html);`,
                 "if (state) {",
                 "   state.template = template;",
+                `   template.hot = () => true;`,
                 "}",
                 "export default template;"
             ];
 
-            return code.join("\n");
+            return code.flat().join("\n");
         }
     };
 
     const api: Plugin = {
         name: "html-editor-api",
         enforce: "pre",
+        apply: "serve",
 
         configureServer({ middlewares }) {
             middlewares.use("/api/editor", async (req, res, next) => {
