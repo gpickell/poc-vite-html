@@ -9,6 +9,12 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
+  "exports": {
+    "./*": {
+      "types": "./dist/lib/*.d.ts",
+      "default": "./dist/lib/*.mjs"
+    }
+  },
   "devDependencies": {
     "@arcgis/core": "^4.28.10",
     "@types/html-minifier-terser": "^7",
@@ -22,6 +28,8 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
     "html-minifier-terser": "^7.2.0",
+    "postcss": "^8.4.31",
+    "postcss-import": "^15.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "typescript": "^5.0.2",

@@ -1,337 +1,392 @@
 import { createReadStream, createWriteStream } from "fs";
 import fs from "fs/promises";
-import path from "path";
+import path, { basename, dirname } from "path";
 
-import { Plugin, normalizePath } from "vite";
+import { Plugin, PluginOption, normalizePath } from "vite";
 
-async function findSources() {
-    function compOf(id: string) {
-        const tail = id.replace(/^(components|layouts)\//, "");
-        if (tail === id) {
-            return "";
-        }
+const npmTest = /[\\/]node_modules[\\/]/;
+const packageExportPrefix = "__pkg__";
+const packageExportSuffix = "?pkg-export";
+const templateSuffix = "?html-template";
 
-        return tail.replace(/\/.*/, "");
-    }
+const cwd = path.resolve();
+const root = path.resolve("src");
 
-    const root = path.resolve("src");
-    const queue = new Set<string>();
-    queue.add(root);
+const hmrTemplate = [
+    "import { SemanticTemplate } from '#html-loader';",
+    "let state;",
+    "if (import.meta.hot) {",
+    "    import.meta.hot.accept();",
+    "    state = import.meta.hot.data;",
+    "}",
+    "const template = state?.template || new SemanticTemplate();",
+    "template.update(html);",
+    "if (state) {",
+    "   state.template = template;",
+    "   template.hot = () => true;",
+    "}",
+    "export default template;"
+];
 
-    const mains = new Set<string>();
-    const isApi = /^apis\/.*\.tsx?$/;
-    const isComponent = /^components\/.*\/index\.tsx?$/;
-    const isLayout = /^components\/.*\.html$/;
-    const isMain = /^components\/.*\/main\.tsx?$/;
-    const result = new Map<string, string>();
-    for (const dir of queue) {
-        const list = await fs.readdir(dir, { withFileTypes: true }).catch(() => [] as never);
-        for (const entry of list) {
-            const fn = path.resolve(dir, entry.name);
-            if (entry.isDirectory()) {
-                queue.add(fn);
-            }
-
-            if (entry.isFile()) {
-                const rel = path.relative(root, fn).replace(/[\\/]+/g, "/");
-                const id = rel.replace(/\..*?$/, "");
-                if (isApi.test(rel) || isComponent.test(rel)) {
-                    result.set(id, fn);
-                }
-
-                if (isLayout.test(rel)) {
-                    result.set(id.replace("components", "layouts"), `${fn}?template`);
-                }
-
-                if (isMain.test(rel)) {
-                    mains.add(compOf(id));
-                }
-            }
-        }
-    }
-
-    for (const key of result.keys()) {
-        if (mains.has(compOf(key))) {
-            result.delete(key);
-        }
-    }
-
-    return Object.fromEntries(result);
+function changeExtension(fn: string, ext: string) {
+    const { dir, name } = path.parse(fn);
+    return normalizePath(`${dir}/${name}${ext}`);
 }
 
-export function html(): Plugin[] {
-    let minify = async (html: string) => html;
-    const suffix = "?template";
-    const build: Plugin = {
-        enforce: "post",
-        name: "html-minify",
-        apply: "build",
+function removeSuffix(id: string, suffix: string) {
+    if (id[0] !== "\0" && id.endsWith(suffix)) {
+        return id.substring(0, id.length - suffix.length);
+    }
 
-        async config(options) {
-            let { build } = options;
-            if (!build) {
-                build = options.build = {};
-            }
+    return "";
+}
 
-            let { rollupOptions } = build;
-            if (!rollupOptions) {
-                rollupOptions = build.rollupOptions = {};
-            }
+function backtickEscape(text: string) {
+    return text.replace(/[\\`]|\$\{/g, x => "\\" + x);
+}
 
-            let { output } = rollupOptions;
-            if (!output) {
-                output = rollupOptions.output = [{}];
-            }
+async function transformHtml(html: string, from?: string, optimize = true) {
+    const { minify } = await import("html-minifier-terser");
+    const { Processor } = await import("postcss");
+    const { default: atImport } = await import("postcss-import");
+    const postcss = new Processor();
+    postcss.use(atImport());
+    
+    const defer: Promise<void>[] = [];
+    const results = new Map<string, string>();
+    html = await minify(html, {
+        minifyCSS(css) {
+            const id = `__css${results.size}`;
+            results.set(id, "");
 
-            if (!Array.isArray(output)) {
-                output = rollupOptions.output = [output];
-            }
-
-            if (build.minify === undefined) {
-                build.minify = true;
-            }
-
-            if (!build.minify) {
-                rollupOptions.preserveEntrySignatures = "strict";
-                rollupOptions.input = await findSources();
-
-                const isRelative = /^\.?\.\//;
-                rollupOptions.external = (id, importer) => {
-                    if (id === "#html-loader") {
-                        return true;
-                    }
-
-                    if (!importer || path.isAbsolute(id)) {
-                        return false;
-                    }
-
-                    if (id.endsWith("?url")) {
-                        return false;
-                    }
-
-                    return !isRelative.test(id);
-                };
-
-                const extras: typeof output[0] = {
-                    // preserveModules: true,
-
-                    assetFileNames: "static/asset.[hash].[ext]",
-                    chunkFileNames: "static/chunk.[hash].mjs",
-                    entryFileNames: "[name].mjs",
-                };
-                
-                for (const item of output) {
-                    Object.assign(item, extras);
-                }
-            } else {
-                const extras: typeof output[0] = {
-                    assetFileNames: "static/asset.[hash].[ext]",
-                    chunkFileNames: "static/chunk.[hash].mjs",
-                    entryFileNames: "static/chunk.[hash].mjs",
-                };
-                
-                for (const item of output) {
-                    Object.assign(item, extras);
-                }
-            }
-        },
-
-        buildStart(options) {
-            minify = async html => {
-                const { minify } = await import("html-minifier-terser");
-                return await minify(html, {
-                    collapseBooleanAttributes: true,
-                    collapseInlineTagWhitespace: true,
-                    collapseWhitespace: true,
-                    decodeEntities: true,
-                    html5: true,
-                    noNewlinesBeforeTagClose: true,
-                    minifyCSS: true,                    
-                    removeComments: true,
-                    removeEmptyAttributes: true,
-                    quoteCharacter: "'",
-                    sortAttributes: true,
-                    sortClassName: true,
-                });
+            const execute = async () => {
+                const result = await postcss.process(css, { from });
+                results.set(id, result.css);
             };
-        },
 
-        async transformIndexHtml(html) {
-            return await minify(html);
-        },
-
-        async generateBundle(options, bundle) {
-            for (const key in bundle) {
-                const chunk = bundle[key];
-                if (chunk.type === "chunk" && chunk.moduleIds.length === 1) {
-                    const id = chunk.moduleIds[0];                  
-                    const fn = chunk.fileName.replace(/\.m?js$/, ".d.ts");
-                    if (id[0] !== "\0" && id.endsWith(suffix) && fn.startsWith("layouts/")) {
-                        if (fn !== chunk.fileName) {
-                            const code = [
-                                `import { SemanticElement } from "#html-loader";`,
-                                `declare const template: SemanticElement;`,
-                                `export default template;`,
-                                ``
-                            ];
-
-                            this.emitFile({
-                                type: "asset",
-                                fileName: fn,
-                                source: code.join("\n"),
-                            });
-                        }
-                    }
-                }
-            }
+            defer.push(execute());
+            return id;
         }
-    };
+    });
 
-    const main: Plugin = {
-        name: "html-loader",
-        enforce: "pre",
+    await Promise.all(defer);
 
-        async resolveId(id, importer, opts: any) {
-            if (id === "#html-loader") {
-                return normalizePath(path.resolve("src/html-loader.ts"));
-            }
+    html = await minify(html, {
+        minifyCSS(css) {
+            return results.get(css) || "";
+        }
+    });
 
-            if (id[0] !== "\0" && id.endsWith(suffix)) {
-                return id;
-            }
+    if (!optimize) {
+        return html;
+    }
 
-            if (!importer || opts.scan) {
-                return undefined;
-            }
+    return await minify(html, {
+        collapseBooleanAttributes: true,
+        collapseInlineTagWhitespace: true,
+        collapseWhitespace: true,
+        decodeEntities: true,
+        html5: true,
+        noNewlinesBeforeTagClose: true,
+        removeComments: true,
+        removeEmptyAttributes: true,
+        quoteCharacter: "'",
+        
+        sortAttributes: true,
+        sortClassName: true,
+        minifyCSS: true,        
+    });
+}
 
-            const result = await this.resolve(id, importer, { ...opts, skipSelf: true });
-            if (result.external) {
-                return result;
-            }
+const commonPlugin: Plugin = {
+    name: "bare-metal-common",
+    enforce: "pre",
 
-            id = result.id;
-            if (id[0] === "\0" || id.indexOf("?") >= 0 || !id.endsWith(".html")) {
-                return result;
-            }
+    async resolveId(id, importer, opts: any) {
+        if (!importer || opts.scan || id[0] === "\0" || id.indexOf("?") >= 0 || !id.endsWith(".html")) {
+            return undefined;
+        }
 
-            return `${id}${suffix}`
-        },
+        const result = await this.resolve(id, importer, { ...opts, skipSelf: true });
+        if (result.external) {
+            return result;
+        }
 
-        async load(id) {
-            if (id === "\0" || !id.endsWith(suffix)) {
-                return undefined;
-            }
+        const target = result.id;
+        if (target[0] === "\0" || target.indexOf("?") >= 0 || !target.endsWith(".html")) {
+            return result;
+        }
 
-            const fn = id.substring(0, id.length - suffix.length);
-            const text = await fs.readFile(fn, "utf-8");
-            const html = await minify(text);
-            const escaped = html.replace(/[$\\`]\{?/g, x => {
-                if (x[0] === "$" && !x[1]) {
-                    return x;
-                }
+        result.id = target + templateSuffix;
+        return result;
+    },
+};
 
-                return "\\" + x;
-            });
+const devPlugin: Plugin = {
+    name: "bare-metal-dev",
+    apply: "serve",
+    enforce: "pre",
+
+    async load(id) {
+        if (id = removeSuffix(id, templateSuffix)) {
+            let html = await fs.readFile(id, "utf-8");
+            html = await transformHtml(html, undefined, false);
+            html = backtickEscape(html);
+            html = html.replace(/(^\s*|\s*$|\r)/g, "");
             
-            const imports: string[] = [];
-            const assembled = escaped.replace(/@import url\((.*?)\)/g, (match, url: string) => {
-                url = url.trim();
-
-                if (url[0] === "/" || url.startsWith("http://") || url.startsWith("https://")) {
-                    return match;
-                }
-
-                const ref = "url" + imports.length;
-                imports.push(`import ${ref} from "${url}?url";`);
-                return `@import url(\${${ref}})`;
-            });
-
             const code = [
-                "",
-                imports,
-                `const html = \`${assembled}\`;`,
-                'import { SemanticTemplate } from "#html-loader";',
-                "let state;",
-                "if (import.meta.hot) {",
-                "    import.meta.hot.accept();",
-                "    state = import.meta.hot.data;",
-                "}",
-                "const template = state?.template || new SemanticTemplate();",
-                `template.update(html);`,
-                "if (state) {",
-                "   state.template = template;",
-                `   template.hot = () => true;`,
-                "}",
-                "export default template;"
+                ``,
+                `const html = \`\n${html}\n\`;`,
+                hmrTemplate,
             ];
 
             return code.flat().join("\n");
         }
-    };
+    }
+};
 
-    const api: Plugin = {
-        name: "html-editor-api",
-        enforce: "pre",
-        apply: "serve",
+const appPlugin: Plugin = {
+    name: "bare-metal-app",
+    apply: "build",
+    enforce: "pre",
 
-        configureServer({ middlewares }) {
-            middlewares.use("/api/editor", async (req, res, next) => {
-                const tail = (req.url || "").replace(/^.*?\?/, "");
-                const file = path.resolve(tail);
-                if (req.method === "GET") {
-                    req.resume();
-                    
-                    const stream = createReadStream(file);
-                    stream.on("error", () => {
-                        res.statusCode = 404;
-                        res.end();
-                    });
-                    
-                    return void stream.on("open", () => {
-                        res.setHeader("Content-Type", "text/html; charset=utf-8");
-                        res.statusCode = 200;
-                        stream.pipe(res);
-                    });
+    config(options) {
+        let { build } = options;
+        if (!build) {
+            build = options.build = {};
+        }
+
+        let { rollupOptions } = build;
+        if (!rollupOptions) {
+            rollupOptions = build.rollupOptions = {};
+        }
+
+        let { output } = rollupOptions;
+        if (!output) {
+            output = rollupOptions.output = [{}];
+        }
+
+        if (!Array.isArray(output)) {
+            output = rollupOptions.output = [output];
+        }
+
+        for (const part of output) {
+            part.assetFileNames = "static/asset.[hash].[ext]";
+            part.chunkFileNames = "static/chunk.[hash].mjs";
+            part.entryFileNames = "static/entry.[hash].mjs";
+        }
+    },
+
+    async load(id) {
+        if (id = removeSuffix(id, templateSuffix)) {
+            let html = await fs.readFile(id, "utf-8");
+            html = await transformHtml(html);
+            html = backtickEscape(html);
+
+            const code = [
+                ``,
+                `const html = \`${html}\`;`,
+                hmrTemplate,
+            ];
+
+            return code.flat().join("\n");
+        }
+    },
+
+    async transformIndexHtml(html) {
+        return await transformHtml(html);
+    }
+};
+
+const libPlugin: Plugin = {
+    name: "bare-metal-lib",
+    apply: "build",
+    enforce: "pre",
+
+    async config(options) {
+        let { build } = options;
+        if (!build) {
+            build = options.build = {};
+        }
+
+        let { rollupOptions } = build;
+        if (!rollupOptions) {
+            rollupOptions = build.rollupOptions = {};
+        }
+
+        build.minify = false;
+        build.sourcemap = true;
+        rollupOptions.input = "src/lib.ts";
+        rollupOptions.preserveEntrySignatures = "strict";
+    },
+
+    async resolveId(id, importer, opts) {
+        if (id === "#html-loader") {
+            return { id, external: true };
+        }
+
+        const result = await this.resolve(id, importer, { ...opts, skipSelf: true });
+        if (result.external) {
+            return result;
+        }
+        
+        if (result.id[0] !== "\0" && npmTest.test(result.id)) {
+            return { id: result.id, external: true };
+        }
+
+        return result;
+    },
+
+    load(id) {
+        if (id = removeSuffix(id, packageExportSuffix)) {
+            const code: string[] = [];
+            const info = this.getModuleInfo(id);
+            for (const e of info.exports) {
+                if (e.startsWith(packageExportPrefix)) {
+                    const as = e.substring(packageExportPrefix.length);
+                    code.push(code.length ? ", " : "export { ");
+                    code.push(`${e} as ${as}`);
+                }
+            }
+
+            code.push(` } from ${JSON.stringify(id)};`);
+            return code.join("");
+        }
+    },
+
+    moduleParsed(info) {
+        const { id } = info;
+        if (info.exports.some(x => x.startsWith(packageExportPrefix))) {
+            let name = normalizePath(path.relative(cwd, info.id));
+            name = name.replace(/\.[jt]sx?$/, ".mjs");
+
+            if (name.startsWith("src/")) {
+                name = name.replace("src/", "lib/");
+                this.emitFile({ type: "chunk", id: `${id}${packageExportSuffix}`, fileName: name });
+            }
+        }
+    },
+
+    generateBundle(_, bundle) {
+        const remove: string[] = [];
+        for (const name in bundle) {
+            const chunk = bundle[name];
+            if (chunk.type === "chunk") {
+                if (name.startsWith("static/entry.")) {
+                    remove.push(name);
                 }
 
-                if (req.method === "POST") {
-                    const stats = await fs.stat(file).catch(() => {});
-                    if (stats && stats.isFile()) {
-                        const stream = createWriteStream(file + ".tmp");
-                        req.on("error", () => {});
-                        req.on("close", () => {
-                            if (!req.readableEnded) {
-                                stream.destroy();
-                            }
-                        });
-
-                        stream.on("error", () => {});
-                        stream.on("close", async () => {
-                            let success = false;
-                            if (stream.writableFinished) {
-                                success = await fs.rename(file + ".tmp", file).then(() => true, () => false);
-                            }
-
-                            req.resume();
-                            req.statusCode = success ? 200 : 500;
-                            res.end();
-
-                            await fs.unlink(file + ".tmp").catch(() => {});
-                        });
-
-                        return void req.pipe(stream);
+                if (name.startsWith("lib/")) {
+                    const code: string[] = [];
+                    for (const as of chunk.exports) {
+                        const e = packageExportPrefix + as;
+                        code.push(code.length ? ", " : "export { ");
+                        code.push(`${e} as ${as}`);
                     }
-                    
-                    req.resume();
-                    res.statusCode = 404;
-                    return res.end();
+        
+                    const fn = chunk.fileName;
+                    const name = changeExtension(fn, ".d.ts");
+                    const dir = normalizePath(path.dirname(name));
+                    const src = changeExtension(fn.replace("lib/", "src/"), "");
+                    const rel = normalizePath(path.relative(dir, src));
+                    code.push(` } from ${JSON.stringify(rel)};`);
+                    this.emitFile({
+                        type: "asset",
+                        fileName: name,
+                        source: code.join(""),
+                    });
                 }
+            }
+        }
 
-                res.statusCode = 405;
-                res.end();
-            });
+        for (const name of remove) {
+            delete bundle[name];
+        }
+    }
+};
+
+const editorApiPlugin: Plugin = {
+    name: "bare-metal-editor-api",
+    enforce: "pre",
+    apply: "serve",
+
+    configureServer({ middlewares }) {
+        middlewares.use("/api/editor", async (req, res, next) => {
+            const tail = (req.url || "").replace(/^.*?\?/, "");
+            const file = path.resolve(tail);
+            if (req.method === "GET") {
+                req.resume();
+                
+                const stream = createReadStream(file);
+                stream.on("error", () => {
+                    res.statusCode = 404;
+                    res.end();
+                });
+                
+                return void stream.on("open", () => {
+                    res.setHeader("Content-Type", "text/html; charset=utf-8");
+                    res.statusCode = 200;
+                    stream.pipe(res);
+                });
+            }
+
+            if (req.method === "POST") {
+                const stats = await fs.stat(file).catch(() => {});
+                if (stats && stats.isFile()) {
+                    const stream = createWriteStream(file + ".tmp");
+                    req.on("error", () => {});
+                    req.on("close", () => {
+                        if (!req.readableEnded) {
+                            stream.destroy();
+                        }
+                    });
+
+                    stream.on("error", () => {});
+                    stream.on("close", async () => {
+                        let success = false;
+                        if (stream.writableFinished) {
+                            success = await fs.rename(file + ".tmp", file).then(() => true, () => false);
+                        }
+
+                        req.resume();
+                        req.statusCode = success ? 200 : 500;
+                        res.end();
+
+                        await fs.unlink(file + ".tmp").catch(() => {});
+                    });
+
+                    return void req.pipe(stream);
+                }
+                
+                req.resume();
+                res.statusCode = 404;
+                return res.end();
+            }
+
+            res.statusCode = 405;
+            res.end();
+        });
+    }
+};
+
+export function bareMetal(mode: "app" | "lib" = "app", loader = "src/html-loader.ts"): PluginOption {
+    const resolverPlugin: Plugin = {
+        enforce: "pre",
+        name: "bare-metal-resolver",
+
+        resolveId(id, _, opts) {
+            if (id === "#html-loader") {
+                return this.resolve(loader, undefined, { ...opts, skipSelf: true });
+            }
         }
     };
 
-    return [build, main, api];
+    return [
+        commonPlugin,
+        mode === "lib" ? libPlugin : false,
+        appPlugin,
+        resolverPlugin,
+        devPlugin,
+        editorApiPlugin, 
+    ];
 }

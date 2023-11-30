@@ -1,15 +1,9 @@
 import { defineConfig } from "vite";
-import { html } from "./vite.plugins";
-
-import react from "@vitejs/plugin-react-swc";
+import { bareMetal } from "./vite.plugins";
 
 export default defineConfig({
     base: "",
     publicDir: false,
 
-    plugins: [html(), react()],
-
-    build: {
-        minify: false,
-    }
-})
+    plugins: [bareMetal("lib")],
+});

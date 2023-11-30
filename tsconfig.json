@@ -15,6 +15,7 @@
     "emitDeclarationOnly": true,
     "declarationDir": "dist",
     "jsx": "react-jsx",
+    "rootDir": ".",
 
     /* Linting */
     "strict": true,

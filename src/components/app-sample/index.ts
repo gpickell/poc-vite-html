@@ -16,7 +16,7 @@ class AppSample extends fromShadow(layout) {
 
         // From here, all we have to do is touch up the DOM.
         const key = this.getAttribute("key") || "default";
-        const model = reg.create(key, () => new AppSampleModel());
+        const model = reg.define(key, () => new AppSampleModel());
         const { classList } = this;
         for (const cls of classList) {
             if (cls[0] === "_") {

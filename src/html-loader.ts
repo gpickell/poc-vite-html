@@ -6,7 +6,7 @@
 export namespace loader {
     const controller = new EventTarget();
     const transient = new EventTarget();
-    const pending = new Set<string>();
+    const pending = new Set<string | symbol>();
     const queue = new Set<string>();
     const visit = new WeakSet();
 
@@ -115,12 +115,10 @@ export namespace loader {
             return request(hint.content);
         }
 
-        if (hint instanceof Element) {
-            request(hint.tagName);
-        }
-
-        for (const child of hint.children) {
-            request(child);
+        let e: Element | undefined;
+        const iter = document.createNodeIterator(hint, 1);
+        while (e = iter.nextNode() as Element | undefined) {
+            request(e.tagName);
         }
 
         return ready();
@@ -131,24 +129,25 @@ export namespace loader {
     }
 }
 
+
+
 //
 // SemanticTemplate
 //
 
-export class SemanticTemplate extends EventTarget {
-    readonly root = document.createElement("template");
+const empty = document.createDocumentFragment();
 
-    get content() {
-        return this.root.content;
-    }
+export class SemanticTemplate extends EventTarget {
+    content = empty;
 
     hot() {
         return false;
     }
 
     update(html = "") {
-        const { root } = this;
+        const root = document.createElement("template");
         root.innerHTML = html;
+        this.content = root.content;
 
         if (this.hot()) {
             this.dispatchEvent(new Event("change"));
@@ -164,21 +163,19 @@ export class SemanticTemplate extends EventTarget {
 
 let pending = false;
 const batch = new Set<SemanticElement>();
+const defer = Promise.resolve();
+const observers = new WeakMap<any, EventTarget>();
 
-async function run() {
-    await (0 as any);
-
-    while (batch.size) {
-        for (const element of [...batch]) {
-            element.render();
-
-            if (batch.delete(element)) {
-                console.warn("%s: This element is requesting re-render from inside render().", element.tagName.toLowerCase());
-            }
-        }
+function run() {
+    for (const element of [...batch]) {
+        element.render();
     }
 
-    pending = false;
+    if (batch.size) {
+        defer.then(run);
+    } else {
+        pending = false;
+    }
 }
 
 function enqueue(target: SemanticElement) {
@@ -186,37 +183,58 @@ function enqueue(target: SemanticElement) {
 
     if (!pending) {
         pending = true;
-        run();
+        defer.then(run);
+    }
+}
+
+class RenderEvent<T> extends Event {
+    constructor(public readonly element: T) {
+        super("render");
     }
 }
 
 export type ContentRef = SemanticTemplate | Element | DocumentFragment;
 
 export class SemanticElement extends HTMLElement {
-    declare _cleanup?: (() => void)[];
-    declare _promises?: Set<Promise<any>>;
-    declare _reload?: boolean;
+    #cleanup?: EventTarget;
+    #promises?: Set<Promise<any>>;
+    #reload?: boolean;
+
+    static addEventListener(...args: Parameters<EventTarget["addEventListener"]>) {
+        const target = observers.get(this) || new EventTarget();
+        observers.set(this, target);
+        target.addEventListener(...args);
+    }
+
+    static removeEventListener(...args: Parameters<EventTarget["addEventListener"]>) {
+        const target = observers.get(this);
+        target && target.removeEventListener(...args);
+    }
+
+    static dispatchEvent(event: Event) {
+        const target = observers.get(this);
+        target && target.dispatchEvent(event);
+    }
 
     get root(): HTMLElement | ShadowRoot {
         return this;
     }
 
     get pending() {
-        const promises = this._promises;
+        const promises = this.#promises;
         return promises ? !!promises.size : false;
     }
 
     get reload() {
-        return this._reload !== false;
+        return this.#reload !== false;
     }
 
     cleanup(fn: () => any) {
-        const cleanup = this._cleanup;
-        cleanup && cleanup.push(fn);
+        this.#cleanup?.addEventListener("cleanup", fn);
     }
 
     defer(promise: Promise<any>) {
-        const promises = this._promises;
+        const promises = this.#promises;
         promises && promises.add(promise);
     }
 
@@ -227,11 +245,14 @@ export class SemanticElement extends HTMLElement {
     request(template: ContentRef) {
         if (template instanceof Node) {
             loader.request(template);
-        } else if (template.hot()) {
-            const refresh = () => this.invalidate(true);
-            template.addEventListener("change", refresh);
-            this.cleanup(() => template.removeEventListener("change", refresh));
+        } else {
             loader.request(template.content);
+
+            if (template.hot()) {
+                const refresh = () => this.invalidate(true);
+                template.addEventListener("change", refresh);
+                this.cleanup(() => template.removeEventListener("change", refresh));
+            }
         }
 
         if (!loader.ready()) {
@@ -248,7 +269,7 @@ export class SemanticElement extends HTMLElement {
 
     invalidate(reload = false) {
         if (reload) {
-            this._reload = true;
+            this.#reload = true;
         }
 
         enqueue(this);
@@ -259,38 +280,39 @@ export class SemanticElement extends HTMLElement {
             return false;
         }
 
-        const cleanup = this._cleanup;
-        cleanup && cleanup.forEach(x => x());
-        this._cleanup = this._promises = undefined;
+        this.#cleanup?.dispatchEvent(new Event("cleanup"));
+        this.#cleanup = this.#promises = undefined;
 
-        if (!this.isConnected) {
-            return false;
-        }
-
-        this._cleanup = [];
-        const promises = this._promises = new Set();
-        const helper = new EventTarget();
-        helper.addEventListener("render", () => {
-            if (this.update()) {
-                this._reload = false;
-            }
-        });
-
-        helper.dispatchEvent(new Event("render"));
-
-        if (promises.size) {
-            const ticket = new Promise<void>(x => this.cleanup(x));
-            const list = [...promises].map(x => Promise.race([x, ticket]));
-            const done = () => {
-                if (this._promises === promises) {
-                    this._promises = undefined;
-                    this.invalidate();
+        if (this.isConnected) {
+            const promises = this.#promises = new Set();
+            const helper = this.#cleanup = new EventTarget();
+            helper.addEventListener("render", () => {          
+                if (this.update()) {
+                    this.#reload = false;
                 }
-            };
+            });
 
-            Promise.all(list).then(done, done);
-            return false;
+            helper.addEventListener("end", () => {
+                if (promises.size) {
+                    const ticket = new Promise<void>(x => this.cleanup(x));
+                    const list = [...promises].map(x => Promise.race([x, ticket]));
+                    const done = () => {
+                        if (this.#promises === promises) {
+                            this.#promises = undefined;
+                            this.invalidate();
+                        }
+                    };
+        
+                    Promise.all(list).then(done, done);
+                }
+            });
+
+            helper.dispatchEvent(new Event("render"));
+            helper.dispatchEvent(new Event("end"));
         }
+
+        const target = observers.get(this.constructor);
+        target?.dispatchEvent(new RenderEvent(this));
 
         return true;
     }
@@ -349,12 +371,15 @@ export function from(...list: ContentRef[]): typeof SemanticElement {
 
 export function fromShadow(...list: ContentRef[]): typeof SemanticElement {
     return class extends from(...list) {
-        get root(): HTMLElement | ShadowRoot {
-            if (!this.shadowRoot) {
-                this.attachShadow({ mode: "open" });
+        #root?: ShadowRoot;
+
+        get root() {
+            let root = this.#root;
+            if (!root) {
+                this.#root = root = this.attachShadow({ mode: "closed" });
             }
 
-            return this.shadowRoot || this;
+            return root;
         }
     };
 }
@@ -365,77 +390,148 @@ export function fromShadow(...list: ContentRef[]): typeof SemanticElement {
 // WeakStore
 //
 
-const created = new WeakSet();
 const reg = new FinalizationRegistry<() => any>(x => x());
 
-export class WeakStore<K, T extends object> extends Map<K, WeakRef<T>> {
+export class WeakStore<K, T extends object> extends Map<K, Set<WeakRef<T>>> {
     clear() {
-        for (const value of this.values()) {
-            reg.unregister(value);
+        for (const set of this.values()) {
+            for (const ref of set) {
+                reg.unregister(ref);
+            }            
         }
 
         super.clear();
     }
 
-    create(key: K, factory: () => T) {
-        let wr = this.get(key);
-        if (wr) {
-            const result = wr.deref();
-            if (result) {
-                created.delete(result);
+    any(key: K) {
+        return !!this.first(key);
+    }
+
+    all(key: K) {
+        const results = new Set<T>();
+        const set = this.get(key);
+        if (!set) {
+            return results;
+        }
+
+        let result: T | undefined;
+        for (const ref of set) {
+            if (result = ref.deref()) {
+                results.add(result);
+            }
+        }
+
+        return results;
+    }
+
+    first(key: K) {
+        const set = this.get(key);
+        if (!set) {
+            return undefined;
+        }
+
+        let result: T | undefined;
+        for (const ref of set) {
+            if (result = ref.deref()) {
                 return result;
             }
         }
 
-        const result = factory();
-        created.add(result);
+        return undefined;
+    }
 
-        super.set(key, wr = new WeakRef(result));
-        reg.register(result, () => {
-            if (this.get(key) === wr) {
-                super.delete(key);
-            }
-        }, wr);
+    last(key: K) {
+        const set = this.get(key);
+        if (!set) {
+            return undefined;
+        }
+
+        let result: T | undefined;
+        for (const ref of set) {
+            result = ref.deref() || result;
+        }
 
         return result;
     }
 
-    delete(key: K) {
-        const wr = this.get(key);
-        wr && reg.unregister(wr);
-        
-        return !!wr;
-    }
-
-    deref(key: K) {
-        return this.get(key)?.deref();
-    }
-
-    set(key: K, value: WeakRef<T> | T) {
-        if (value instanceof WeakRef) {
-            value = value.deref() as T;
-
-            if (!value) {
-                return this;
-            }
-        }
-
-        if (this.deref(key) === value) {
-            return this;
-        }
-
-        const wr = new WeakRef(value);
-        super.set(key, wr);
+    add(key: K, value: T) {
+        const ref = new WeakRef(value);
+        const set = this.get(key) || new Set();
+        this.set(key, set);
+        set.add(ref);
         reg.register(value, () => {
-            if (this.get(key) === wr) {
+            console.log("--- fin");
+            if (this.get(key) === set && set.delete(ref) && set.size < 1) {
                 super.delete(key);
             }
-        }, wr);
+        }, ref);
 
-        return this;
+        return ref;
     }
-}
 
-export function newlyCreated(model: any) {
-    return model && typeof model === "object" ? created.delete(model) : false;
+    ref(key: K, value: T) {
+        const set = this.get(key);
+        if (!set) {
+            return undefined;
+        }
+
+        for (const ref of set) {
+            if (ref.deref() === value) {
+                return ref;
+            }
+        }
+
+        return undefined;
+    }
+
+    define(key: K, factory: () => T) {
+        let result = this.first(key);
+        if (!result) {
+            result = factory();
+            this.add(key, result);
+        }
+
+        return result;
+    }
+
+    delete(key: K, value?: T | WeakRef<T>) {
+        const set = this.get(key);
+        if (!set) {
+            return false;
+        }
+
+        if (!value) {
+            for (const ref of set) {
+                reg.unregister(ref);
+            }
+
+            return super.delete(key);
+        }
+
+        if (value instanceof WeakRef) {
+            if (!set.delete(value)) {
+                return false;
+            }
+
+            if (set.size < 1) {
+                super.delete(key);
+            }
+
+            reg.unregister(value);
+            return true;
+        }
+     
+        for (const ref of set) {
+            if (ref.deref() === value && set.delete(ref)) {
+                if (set.size < 1) {
+                    super.delete(key);
+                }
+
+                reg.unregister(value);
+                return true;    
+            }
+        }
+
+        return false;
+    }
 }

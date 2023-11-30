@@ -22,6 +22,15 @@ declare module "#html-loader" {
 
     export type ContentRef = SemanticElement | Element | DocumentFragment;
 
+    export class RenderEvent<T> extends Event {
+        readonly element: T;
+        constructor(element: T);
+    }
+
+    export interface SemanticAddEventListener<T> {
+        (type: "render", callback: (e: RenderEvent<T>) => any): void;
+    }
+
     export class SemanticElement extends HTMLElement {
         protected readonly pending: boolean;
         protected readonly reload: boolean;
@@ -31,6 +40,7 @@ declare module "#html-loader" {
         protected defer(promise: Promise<any>): void;
         protected keep(...models: any[]): void;
         protected request(fn: ContentRef): void;
+        protected observe<T extends typeof SemanticElement>(target: T): SemanticAddEventListener<InstanceType<T>>;
         protected observe<T extends EventTarget>(target: T): T["addEventListener"];
         
         invalidate(): boolean;
@@ -43,13 +53,20 @@ declare module "#html-loader" {
     export function from(...list: ContentRef[]): typeof SemanticElement;
     export function fromShadow(...list: ContentRef[]): typeof SemanticElement;
 
-    class WeakStore<K, T extends object> extends Map<K, WeakRef<T>> {
-        create(key: K, factory: () => T): T;
-        deref(key: K): T | undefined;
-        set(key: K, value: T | WeakRef<T>): this;
-    }
+    class WeakStore<K, T extends object> {
+        all(key: K): Set<T>;
+        any(key: K): boolean;
+        first(key: K): T | undefined;
+        last(key: K): T | undefined;
+        ref(key: K, value: T): WeakRef<T> | undefined;
 
-    export function newlyCreated(model: object): boolean;
+        clear(): void;
+        add(key: K, value: T): WeakRef<T>;
+        define(key: K, factory: () => T): T;
+        delete(key: K, value?: T | WeakRef<T> | false): boolean;
+
+        keys(): Iterable<K>;
+    }
 }
 
 declare module "*.html" {
