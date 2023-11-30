@@ -12,3 +12,5 @@ loader.addEventListener("import", () => {
         promise.then(x => customElements.define(hint, x.default));
     }
 });
+
+loader.start();

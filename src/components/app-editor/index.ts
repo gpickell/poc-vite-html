@@ -1,5 +1,3 @@
-import "../../setup";
-
 import layout from "./layout.html";
 import { fromShadow } from "#html-loader";
 
@@ -64,4 +62,4 @@ class AppEditor extends fromShadow(layout) {
     }
 }
 
-customElements.define("app-editor", AppEditor);
+export default AppEditor;

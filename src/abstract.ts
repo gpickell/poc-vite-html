@@ -9,6 +9,7 @@ declare module "#html-loader" {
         export function wait(): Promise<void>;
     
         export function request(hint: Element | DocumentFragment | string): boolean;    
+        export function start(): void;
     }
 
     export class SemanticTemplate extends EventTarget {

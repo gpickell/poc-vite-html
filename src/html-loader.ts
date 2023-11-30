@@ -127,6 +127,16 @@ export namespace loader {
     export function wait() {
         return promise;
     }
+
+    export function start() {
+        const template = document.querySelector("template#main");
+        if (template instanceof HTMLTemplateElement) {
+            loader.request(template);
+
+            const content = template.content.cloneNode(true);
+            wait().then(() => document.body.append(content));
+        }
+    }
 }
 
 
