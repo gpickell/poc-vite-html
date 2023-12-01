@@ -1,68 +1,60 @@
+const defer = Promise.resolve();
 
 //
 // loader
 //
 
 export namespace loader {
+    function nop() {}
+
     const controller = new EventTarget();
     const transient = new EventTarget();
-    const pending = new Set<string | symbol>();
+    const pending = new Set<string>();
     const queue = new Set<string>();
     const visit = new WeakSet();
 
-    function nop() {}
-
-    let current = "";
-    let event = new Event("import");
     let promise = Promise.resolve();
     let resolve = nop;
 
-    async function attempt(target: EventTarget, hint: string) {
-        await (0 as any);
+    class RequestEvent extends Event {
+        constructor(public readonly tag: string) {
+            super("request", { cancelable: true });
+        }
 
-        if (queue.has(hint)) {
-            current = hint;
-            event = new Event("import", { cancelable: true });
+        defer() {
+            this.stopImmediatePropagation();
+            this.preventDefault();
+        }
+    }
+
+    function attempt(target: EventTarget, tag: string) {
+        if (queue.has(tag)) {
+            const event = new RequestEvent(tag);
             target.dispatchEvent(event);
-            current = "";
 
             if (event.defaultPrevented) {
-                pending.add(hint);
-                queue.delete(hint);            
+                pending.add(tag);
+                queue.delete(tag);            
             }
         }
     }
 
-    async function cleanup(type: string, callback: () => any) {
-        await (0 as any);
-        transient.removeEventListener(type, callback);
-    }
-
-    export function addEventListener(type: "import", callback: () => any) {
-        if (type === "import") {
+    export function addEventListener(type: string, callback: () => any) {
+        if (type === "request") {
             controller.addEventListener(type, callback);
             transient.addEventListener(type, callback);
 
-            for (const hint of queue) {
-                attempt(transient, hint);
+            for (const tag of queue) {
+                defer.then(() => attempt(transient, tag));
             }
 
-            cleanup(type, callback);
+            defer.then(() => transient.removeEventListener(type, callback));
         }
     }
 
-    export function removeEventListener(type: "import", callback: () => any) {
+    export function removeEventListener(type: string, callback: () => any) {
         controller.removeEventListener(type, callback);
         transient.removeEventListener(type, callback);
-    }
-
-    export function defer() {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-    }
-
-    export function next() {
-        return current;
     }
 
     export function ready() {
@@ -128,10 +120,10 @@ export namespace loader {
         return promise;
     }
 
-    export function start() {
-        const template = document.querySelector("template#main");
+    export function start(hint: HTMLTemplateElement | string = "template#main") {
+        const template = typeof hint === "string" ? document.querySelector(hint) : hint;
         if (template instanceof HTMLTemplateElement) {
-            loader.request(template);
+            request(template);
 
             const content = template.content.cloneNode(true);
             wait().then(() => document.body.append(content));
@@ -173,7 +165,6 @@ export class SemanticTemplate extends EventTarget {
 
 let pending = false;
 const batch = new Set<SemanticElement>();
-const defer = Promise.resolve();
 const observers = new WeakMap<any, EventTarget>();
 
 function run() {
@@ -203,7 +194,7 @@ class RenderEvent<T> extends Event {
     }
 }
 
-export type ContentRef = SemanticTemplate | Element | DocumentFragment;
+type ContentRef = SemanticTemplate | Element | DocumentFragment;
 
 export class SemanticElement extends HTMLElement {
     #cleanup?: EventTarget;

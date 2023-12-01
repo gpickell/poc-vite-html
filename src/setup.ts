@@ -2,14 +2,13 @@ import { loader } from "#html-loader";
 
 const modules = import.meta.glob("./components/*/index.ts");
 
-loader.addEventListener("import", () => {
-    const hint = loader.next();
-    const id = `./components/${hint}/index.ts`;
+loader.addEventListener("request", e => {
+    const id = `./components/${e.tag}/index.ts`;
     if (id in modules) {
-        loader.defer();
+        e.defer();
 
         const promise = modules[id]() as Promise<Record<"default", CustomElementConstructor>>;
-        promise.then(x => customElements.define(hint, x.default));
+        promise.then(x => customElements.define(e.tag, x.default));
     }
 });
 
