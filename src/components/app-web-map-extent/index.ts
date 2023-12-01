@@ -26,7 +26,7 @@ class AppWebMapExtent extends fromShadow(layout) {
 
         const div = this.root.querySelector("#details")!;
         div.innerHTML = "";
-        div.append(document.createTextNode(text.join("\n")));
+        div.append(text.join("\n"));
 
         this.observe(AppWebMap)("render", ({ element }) => {
             if (element.name === this.name) {
