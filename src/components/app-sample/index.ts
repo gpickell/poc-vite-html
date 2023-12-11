@@ -1,5 +1,6 @@
 import layout from "./layout.html";
-import { WeakStore, fromShadow } from "#html-loader";
+import { fromShadow } from "@tsereact/bare-metal/SemanticElement";
+import WeakStore from "@tsereact/bare-metal/WeakStore";
 import Model from "../../Model";
 
 const reg = new WeakStore<string, AppSampleModel>();

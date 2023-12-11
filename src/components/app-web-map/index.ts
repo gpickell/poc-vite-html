@@ -1,5 +1,12 @@
 import layout from "./layout.html";
-import { WeakStore, fromShadow } from "#html-loader";
+import { fromShadow } from "@tsereact/bare-metal/SemanticElement";
+import WeakStore from "@tsereact/bare-metal/WeakStore";
+
+declare module "@tsereact/bare-metal/Loader" {
+    interface CustomElements {
+        "app-web-map": typeof AppWebMap;
+    }
+}
 
 import Map from "@arcgis/core/Map";
 import WebMap from "@arcgis/core/WebMap";

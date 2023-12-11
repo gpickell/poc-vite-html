@@ -1,6 +1,6 @@
+import Loader from "@tsereact/bare-metal/Loader";
 import layout from "./layout.html";
-import { fromShadow } from "#html-loader";
-import AppWebMap from "../app-web-map";
+import { fromShadow } from "@tsereact/bare-metal/SemanticElement";
 
 class AppWebMapExtent extends fromShadow(layout) {
     get name() {
@@ -10,6 +10,11 @@ class AppWebMapExtent extends fromShadow(layout) {
     protected update() {        
         if (!super.update()) {
             return false;
+        }
+
+        const AppWebMap = this.request("app-web-map");
+        if (!AppWebMap) {
+            return true;
         }
 
         const text: string[] = [];
@@ -28,7 +33,7 @@ class AppWebMapExtent extends fromShadow(layout) {
         div.innerHTML = "";
         div.append(text.join("\n"));
 
-        this.observe(AppWebMap)("render", ({ element }) => {
+        this.observe(Loader)("render:app-web-map", ({ element }) => {
             if (element.name === this.name) {
                 this.invalidate();
             }

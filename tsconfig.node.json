@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "customConditions": ["source"],
+    
     "composite": true,
     "skipLibCheck": true,
     "module": "ESNext",

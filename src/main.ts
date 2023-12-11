@@ -1,8 +1,7 @@
-import { loader } from "#html-loader";
+import Loader from "@tsereact/bare-metal/Loader";
 
 const modules = import.meta.glob("./components/*/index.ts");
-
-loader.addEventListener("request", e => {
+Loader.addEventListener("request", e => {
     const id = `./components/${e.tag}/index.ts`;
     if (id in modules) {
         e.defer();
@@ -11,5 +10,3 @@ loader.addEventListener("request", e => {
         promise.then(x => customElements.define(e.tag, x.default));
     }
 });
-
-loader.start();

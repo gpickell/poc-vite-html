@@ -1,0 +1,30 @@
+{
+  "name": "@tsereact/bare-metal-terser-postcss",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build-tool": "vite build && tsc"
+  },
+  "devDependencies": {
+    "@types/html-minifier-terser": "^7",
+    "@types/postcss-import": "^14.0.3",
+    "html-minifier-terser": "^7.2.0",
+    "postcss": "^8.4.32",
+    "postcss-import": "^15.1.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.7"
+  },
+  "peerDependencies": {
+    "html-minifier-terser": "^7.2.0",
+    "postcss": "^8.4.32",
+    "postcss-import": "^15.1.0"
+  },
+  "exports": {
+    "./*": {
+      "source": "./src/*.ts",
+      "types": "./dist/src/*.d.ts",
+      "default": "./dist/lib/*.mjs"
+    }
+  }
+}
